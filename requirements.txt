@@ -1,0 +1,2 @@
+# Dependência autorizada pelo CONTEXT_RULES.md (usada apenas nos testes).
+pytest>=8.0
