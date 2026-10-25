@@ -10,7 +10,7 @@ justificada e revisada.
 | **Estudante** | Gabriel Bernardo Dias Alves |
 | **Curso / Turma** | Ciência da Computação — Turma B |
 | **Disciplina** | Bootcamp III |
-| **Versão atual** | 1.1 |
+| **Versão atual** | 1.2 |
 
 ## Histórico de versões
 
@@ -18,6 +18,7 @@ justificada e revisada.
 |---|---|---|---|
 | 1.0 | 13/09/2026 | Fase 1 (Google Docs) | Especificação inicial, cenários de aceite e CONTEXT_RULES. |
 | 1.1 | 17/10/2026 | Fase 2 (este repositório) | Alinhamento ao enunciado da Fase 2: métricas em horas, totais por status, exceção `TaskValidationError` e retorno 0.0 sem tarefas concluídas. Detalhes na seção 9. |
+| 1.2 | 25/10/2026 | Fase 3 (este repositório) | Estrutura final do repositório e esteira de entrega: CI no GitHub Actions, Docker, `specs/system_design_document.pdf`, `specs/requirements.yaml` e branch `develop`. O contrato de negócio (seções 2 a 7) não muda. Detalhes nas seções 10 e 11. |
 
 ## 1. Propósito
 
@@ -178,3 +179,60 @@ aqui:
 6. **Detalhes explícitos.** Concluir exatamente no prazo não é atraso (RN-04),
    arredondamento meio para cima (RN-07) e datas sem fuso interpretadas como UTC
    (seção 3).
+
+## 10. Estrutura do repositório e esteira de entrega (v1.2)
+
+A seção 4.1 do documento da Fase 1 definiu a árvore do repositório, e o
+`CONTEXT_RULES.md` proíbe modificá-la. O enunciado da Fase 3 exige arquivos e
+pastas novos. A inclusão abaixo foi autorizada pelo humano responsável e é
+registrada aqui como nova versão, em vez de ser feita pela IA por conta própria.
+
+```
+sdd-task-analyzer/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    # CI: pytest a cada push e pull request
+├── Dockerfile                        # Imagem python:3.11-slim que roda o pytest
+├── docker-compose.yml                # Serviço que roda a suíte com um comando
+├── CONTEXT_RULES.md                  # Regras de governança para a IA
+├── specs/
+│   ├── task_analyzer_spec.md         # Este contrato (versão vigente)
+│   ├── system_design_document.pdf   # Documento SDD em PDF
+│   └── requirements.yaml             # Requisitos e regras em formato de máquina
+├── tests/
+│   └── test_harness.py               # Test Harness (inalterado desde a Fase 2)
+├── src/
+│   └── task_analyzer.py              # Código gerado via IA e homologado
+├── .gitignore
+├── .dockerignore                     # Arquivos que não entram na imagem Docker
+├── requirements.txt                  # Dependência autorizada: pytest
+└── README.md
+```
+
+Esteira de entrega:
+
+| Etapa | Ferramenta | Regra |
+|---|---|---|
+| Integração contínua | GitHub Actions (`ubuntu-latest`, Python 3.11) | Roda `pytest tests/test_harness.py -v` em todo push e pull request para `main` e `develop`. O merge só acontece com o build verde. |
+| Portabilidade | Docker (`python:3.11-slim`) e Docker Compose | A mesma suíte roda dentro de um container isolado, com um único comando. |
+| Fluxo Git | `feature/*` → `develop` → `main` | Cada tema chega à `develop` por Pull Request homologado; a `develop` chega à `main` por Pull Request. |
+
+## 11. Mudanças da versão 1.1 para a 1.2 (justificativas)
+
+1. **Arquivos de infraestrutura.** `.github/workflows/ci.yml`, `Dockerfile`,
+   `docker-compose.yml` e `.dockerignore` passam a fazer parte da estrutura,
+   porque o enunciado da Fase 3 exige CI e containerização. Eles não são
+   bibliotecas do código de produção: o `src/` continua só com a biblioteca
+   padrão, e a única dependência instalada é o `pytest`.
+2. **Documentos de especificação.** `specs/system_design_document.pdf` (o
+   documento SDD da Fase 1 em PDF, com um adendo das versões 1.1 e 1.2) e
+   `specs/requirements.yaml` (requisitos, regras e validações em formato
+   legível por máquina) foram acrescentados. Este arquivo continua sendo o
+   contrato vigente.
+3. **Branch `develop`.** A estratégia de versionamento da Fase 1 (seção 4.3)
+   previa `main`, `develop` e `feature/*`; na Fase 2 a `develop` não foi usada.
+   A partir da 1.2 ela passa a ser a branch de integração.
+4. **Contrato inalterado.** Entradas, saídas, regras de negócio (RN-01 a
+   RN-09), validações (VAL-01 a VAL-07) e cenários de aceite continuam iguais
+   aos da versão 1.1. O `tests/test_harness.py` e o `src/task_analyzer.py` não
+   são modificados nesta versão.
