@@ -30,3 +30,20 @@ jobs:
 
       - name: Executar o Test Harness
         run: pytest tests/test_harness.py -v
+
+  docker:
+    name: Docker (build e testes no container)
+    runs-on: ubuntu-latest
+    needs: testes
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v5
+
+      - name: Construir a imagem (docker build)
+        run: docker build -t sdd-task-analyzer:latest .
+
+      - name: Rodar a suíte dentro do container (docker run)
+        run: docker run --rm sdd-task-analyzer:latest
+
+      - name: Rodar a suíte com Docker Compose
+        run: docker compose run --rm testes
