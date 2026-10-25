@@ -1,0 +1,6 @@
+# Orquestra a suíte de testes com um único comando:
+#   docker compose run --rm testes
+services:
+  testes:
+    build: .
+    image: sdd-task-analyzer:latest
