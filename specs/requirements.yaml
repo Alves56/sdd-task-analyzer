@@ -1,0 +1,200 @@
+# Requisitos do TaskAnalyzer em formato legível por máquina.
+# Espelha o contrato vigente em specs/task_analyzer_spec.md (versão 1.2).
+# Em caso de divergência, vale o arquivo .md, e a diferença deve ser corrigida
+# por Pull Request homologado.
+
+projeto:
+  nome: sdd-task-analyzer
+  modulo: src/task_analyzer.py
+  especificacao: specs/task_analyzer_spec.md
+  versao_especificacao: "1.2"
+  autor: Gabriel Bernardo Dias Alves
+  curso: Ciência da Computação
+  turma: Turma B
+  disciplina: Bootcamp III
+
+historico_versoes:
+  - versao: "1.0"
+    data: "2026-09-13"
+    origem: Fase 1 (Google Docs)
+    resumo: Especificação inicial, cenários de aceite e CONTEXT_RULES.
+  - versao: "1.1"
+    data: "2026-10-17"
+    origem: Fase 2
+    resumo: >-
+      Métricas em horas, totais por status, TaskValidationError e retorno 0.0
+      sem tarefas concluídas.
+  - versao: "1.2"
+    data: "2026-10-25"
+    origem: Fase 3
+    resumo: >-
+      Estrutura final do repositório (CI, Docker, specs) e branch develop.
+      Contrato de negócio inalterado.
+
+ambiente:
+  python: ">=3.11"
+  dependencias_producao: []  # src/ usa apenas a biblioteca padrão
+  dependencias_teste:
+    - pytest>=8.0
+
+interface_publica:
+  funcao:
+    nome: analyze_tasks
+    assinatura: "analyze_tasks(tasks: Sequence[Mapping[str, Any]]) -> ResultadoAnalise"
+    altera_entrada: false
+    persiste_dados: false
+  excecao:
+    nome: TaskValidationError
+    herda_de: ValueError
+    uso: Entrada que viola o contrato (validações VAL-01 a VAL-07).
+
+entradas:
+  - campo: id_tarefa
+    tipo: int
+    obrigatorio: true
+    restricoes: Único e maior que 0.
+  - campo: data_criacao
+    tipo: datetime
+    obrigatorio: true
+  - campo: data_inicio
+    tipo: datetime
+    obrigatorio: false
+  - campo: data_conclusao
+    tipo: datetime
+    obrigatorio: false
+    obrigatorio_quando: status == "concluída"
+  - campo: prazo
+    tipo: datetime
+    obrigatorio: true
+  - campo: prioridade
+    tipo: str
+    obrigatorio: true
+    valores_permitidos: [baixa, média, alta]
+  - campo: status
+    tipo: str
+    obrigatorio: true
+    valores_permitidos: [concluída, pendente, cancelada]
+
+fuso_horario:
+  padrao: UTC
+  datas_sem_fuso: interpretadas como UTC
+  datas_com_outro_fuso: convertidas para UTC
+
+saidas:
+  - campo: total_tarefas
+    tipo: int
+  - campo: total_concluidas
+    tipo: int
+  - campo: total_pendentes
+    tipo: int
+  - campo: total_canceladas
+    tipo: int
+  - campo: tempo_medio_conclusao_horas
+    tipo: float
+  - campo: taxa_atraso_percentual
+    tipo: float
+  - campo: indicadores_por_prioridade
+    tipo: dict
+    chaves_sempre_presentes: [baixa, média, alta]
+    conteudo_de_cada_chave: Os seis campos acima, calculados só para a prioridade.
+
+regras_de_negocio:
+  - id: RN-01
+    descricao: >-
+      Apenas tarefas "concluída" entram no tempo médio e na taxa de atraso.
+      Pendentes e canceladas entram só nas contagens.
+  - id: RN-02
+    descricao: >-
+      Tempo de conclusão = data_conclusao - data_inicio; sem data_inicio,
+      usa-se data_criacao.
+  - id: RN-03
+    descricao: O tempo de conclusão é expresso em horas.
+  - id: RN-04
+    descricao: >-
+      Atrasada quando data_conclusao > prazo. Concluir exatamente no prazo não
+      é atraso.
+  - id: RN-05
+    descricao: Taxa de atraso = concluídas atrasadas / concluídas x 100.
+  - id: RN-06
+    descricao: >-
+      Sem tarefas concluídas, tempo médio e taxa de atraso valem 0.0. A divisão
+      por zero é evitada explicitamente, sem lançar exceção.
+  - id: RN-07
+    descricao: >-
+      Tempos e percentuais com duas casas decimais, arredondamento meio para
+      cima (1,125 -> 1,13).
+  - id: RN-08
+    descricao: Todas as datas são tratadas em UTC.
+  - id: RN-09
+    descricao: >-
+      As três prioridades aparecem sempre em indicadores_por_prioridade, mesmo
+      sem tarefas (valores zerados).
+
+validacoes:
+  excecao: TaskValidationError
+  itens:
+    - id: VAL-01
+      descricao: A entrada não é lista ou tupla, ou um item não é dicionário.
+    - id: VAL-02
+      descricao: Campo obrigatório ausente ou None.
+    - id: VAL-03
+      descricao: id_tarefa não inteiro, menor ou igual a 0, ou repetido.
+    - id: VAL-04
+      descricao: Campo de data com valor que não é datetime.
+    - id: VAL-05
+      descricao: prioridade ou status fora dos valores permitidos.
+    - id: VAL-06
+      descricao: >-
+        Datas inconsistentes: data_conclusao anterior a data_criacao ou a
+        data_inicio, ou data_inicio anterior a data_criacao.
+    - id: VAL-07
+      descricao: Tarefa "concluída" sem data_conclusao.
+
+cenarios_de_aceite:
+  - id: CENARIO-1
+    nome: Sucesso, métricas corretas
+    regras: [RN-01, RN-02, RN-03, RN-04, RN-05, RN-07, RN-09]
+    testes: tests/test_harness.py::test_cenario1_*
+  - id: CENARIO-2
+    nome: Exceção para entradas inválidas
+    regras: [VAL-01, VAL-02, VAL-03, VAL-04, VAL-05, VAL-06, VAL-07]
+    testes: tests/test_harness.py::test_cenario2_*
+  - id: BORDA
+    nome: Sem tarefas concluídas e fuso horário
+    regras: [RN-06, RN-08]
+    testes: tests/test_harness.py::test_borda_*
+
+governanca:
+  regras_ia: CONTEXT_RULES.md
+  versao_regras: "1.2"
+  proibicoes:
+    - Bibliotecas externas no código de produção.
+    - Alterar, remover ou adaptar os cenários de teste.
+    - Modificar a estrutura de pastas sem autorização humana versionada.
+    - Persistir dados em arquivos ou bancos de dados.
+    - Alterar a assinatura das funções públicas sem autorização.
+    - Assumir comportamentos não especificados no contrato.
+  homologacao_humana:
+    - Todos os testes aprovados, localmente e no CI (build verde).
+    - Conformidade com a especificação e com o CONTEXT_RULES.md.
+    - Revisão de qualidade, tratamento de erros e ausência de dependências.
+    - Testes manuais de casos de borda, quando necessário.
+    - Merge somente após a aprovação humana.
+
+esteira_de_entrega:
+  ci:
+    arquivo: .github/workflows/ci.yml
+    gatilhos: [push, pull_request]
+    branches: [main, develop]
+    ambiente: ubuntu-latest
+    python: "3.11"
+    preparacao: pip install -r requirements.txt
+    execucao: pytest tests/test_harness.py -v
+  docker:
+    dockerfile: Dockerfile
+    imagem_base: python:3.11-slim
+    comando_principal: pytest tests/test_harness.py -v
+    compose: docker-compose.yml
+    servico: testes
+    comando_unico: docker compose run --rm testes
+  fluxo_git: feature/* -> develop -> main
